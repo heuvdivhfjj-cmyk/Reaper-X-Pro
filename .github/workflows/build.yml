@@ -1,14 +1,14 @@
-name: FinalBuild
+name: FinalReaper
 on: [push, workflow_dispatch]
 jobs:
-  check:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build
+      - name: Build APK
         run: |
           pip install buildozer cython==0.29.33
-          echo "from kivy.app import App; from kivy.uix.label import Label; class Main(App): build = lambda self: Label(text='DONE'); Main().run()" > main.py
+          echo "from kivy.app import App; from kivy.uix.label import Label; class Main(App): build = lambda self: Label(text='🔱 REAPER ACTIVE'); Main().run()" > main.py
           yes | buildozer init
           sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
           sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
@@ -16,5 +16,6 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: Reaper-App
+          name: Reaper-APK
           path: bin/*.apk
+          
