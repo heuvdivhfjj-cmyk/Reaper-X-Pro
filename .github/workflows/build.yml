@@ -1,19 +1,81 @@
-name: Build
+name: Build Reaper X-Pro
 on: [push, workflow_dispatch]
+
 jobs:
-  job1:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build
+
+      - name: Install System Tools
         run: |
-          pip install buildozer cython==0.29.33
-          echo "from kivy.app import App; from kivy.uix.button import Button; class M(App): build=lambda s: Button(text='ACTIVE'); M().run()" > main.py
+          sudo apt-get update
+          sudo apt-get install -y build-essential libffi-dev python3-dev zip unzip cmake autoconf libtool pkg-config
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Buildozer & Cython
+        run: pip install cython==0.29.33 buildozer
+
+      - name: Create main.py
+        run: |
+          cat <<EOF > main.py
+          import time, threading, os
+          from kivy.app import App
+          from kivy.uix.boxlayout import BoxLayout
+          from kivy.uix.button import Button
+          from kivy.uix.label import Label
+          from kivy.core.window import Window
+          from kivy.clock import Clock
+
+          Window.clearcolor = (0.1, 0.1, 0.1, 1)
+
+          class ReaperEngine(BoxLayout):
+              def __init__(self, **kwargs):
+                  super().__init__(orientation='vertical', padding=30, spacing=20, **kwargs)
+                  self.add_widget(Label(text="🔱 REAPER X-PRO v10 💀", font_size='26sp', color=(1,0,0,1), bold=True))
+                  self.status = Label(text="DPI 500 | STABILIZER: ON", color=(1,1,1,1))
+                  self.add_widget(self.status)
+                  self.exec_btn = Button(text="ACTIVATE HYPER-LOCK", background_color=(0.6,0,0,1), font_size='22sp', bold=True, size_hint_y=None, height=120)
+                  self.exec_btn.bind(on_press=self.start_mod)
+                  self.add_widget(self.exec_btn)
+
+              def start_mod(self, instance):
+                  self.exec_btn.disabled = True
+                  self.status.text = "INJECTING MAGNET..."
+                  threading.Thread(target=self.logic).start()
+
+              def logic(self):
+                  # أوامر تحسين حساسية اللمس والنظام
+                  os.system("settings put system pointer_speed 12")
+                  os.system("settings put global window_animation_scale 0.5")
+                  time.sleep(2)
+                  Clock.schedule_once(lambda dt: self.update_ui("HYPER-LOCK ACTIVE ✅", (0,1,0,1)))
+
+              def update_ui(self, msg, color):
+                  self.status.text = msg
+                  self.status.color = color
+
+          class AimApp(App):
+              def build(self):
+                  return ReaperEngine()
+
+          if __name__ == "__main__":
+              AimApp().run()
+          EOF
+
+      - name: Build Android APK
+        run: |
           yes | buildozer init
           sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
           sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           buildozer -v android debug
-      - uses: actions/upload-artifact@v3
+
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v3
         with:
-          name: App
+          name: Reaper-X-Pro-v10
           path: bin/*.apk
