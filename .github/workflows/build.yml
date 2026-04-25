@@ -1,27 +1,28 @@
-name: Build Reaper
+name: ReaperBuild
 on: [push, workflow_dispatch]
 jobs:
-  build:
+  reaper_job:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Environment
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libffi-dev python3-dev zip unzip cmake autoconf libtool pkg-config
           pip install cython==0.29.33 buildozer
-      - name: Create main.py
+      - name: Create App File
         run: |
-          echo "from kivy.app import App; from kivy.uix.button import Button; class Main(App): build = lambda self: Button(text='🔱 REAPER ACTIVE ✅', font_size=30); Main().run()" > main.py
-      - name: Build
+          echo "from kivy.app import App; from kivy.uix.label import Label; class Main(App): build = lambda self: Label(text='🔱 REAPER ACTIVE'); Main().run()" > main.py
+      - name: Build APK
         run: |
           yes | buildozer init
           sed -i 's/requirements = .*/requirements = python3,kivy/' buildozer.spec
           sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           buildozer -v android debug
-      - name: Upload
+      - name: Save APK
         uses: actions/upload-artifact@v3
         with:
-          name: Reaper-APK
+          name: Reaper-App
           path: bin/*.apk
           
